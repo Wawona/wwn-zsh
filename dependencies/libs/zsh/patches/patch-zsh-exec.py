@@ -14,7 +14,7 @@ Strategy (mirrors how zsh already runs builtins in-process):
      exactly like the builtin path.
 
 The patch is anchor-based and idempotent. If an anchor is missing (upstream zsh
-drift), it exits non-zero so the build fails loudly. Pinned against zsh 5.9.
+drift), it exits non-zero so the build fails loudly. Pinned against zsh 5.9.1.
 """
 import sys
 from pathlib import Path
@@ -31,22 +31,29 @@ def fail(msg: str):
 def patch_ios_init_io(src: str) -> str:
     if "wwn_pty_ios_note_init_io();" in src:
         return src
-    anchor = """#else
-    opts[MONITOR] = 0;
-#endif
-}"""
-    patch = """#else
-    opts[MONITOR] = 0;
-#endif
-#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH)
-    /*
-     * wawona-pty: stdout is the weston display socket; keyboard bytes are
-     * injected into a separate stdin pipe.  Stock init_io() often sets SHTTY
-     * from stdout (stdin is read-only so rdwrtty(0) fails); ZLE then poll(2)s
-     * the display socket and never sees injected input.  Route tty I/O through
-     * stdin (read) + stdout (write); Zle/zle_main.c also reads WWN_ZLE_INFD.
-     */
+    anchor = """    /* We will only use zle if shell is interactive, *
+     * SHTTY != -1, and shout != 0                   */
     if (interact) {
+	init_shout();
+	if(!SHTTY || !shout)
+	    opts[USEZLE] = 0;
+    } else
+	opts[USEZLE] = 0;
+
+    /* If interactive, make sure the shell is in the foreground and is the
+     * process group leader.
+     */"""
+    patch = """    /* We will only use zle if shell is interactive, *
+     * SHTTY != -1, and shout != 0                   */
+#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH)
+    if (interact) {
+	/*
+	 * wawona-pty: stdout is the weston display socket; keyboard bytes are
+	 * injected into a separate stdin pipe.  Stock init_io() often sets SHTTY
+	 * from stdout (stdin is read-only so rdwrtty(0) fails); ZLE then poll(2)s
+	 * the display socket and never sees injected input.  Route tty I/O through
+	 * stdin (read) + stdout (write); Zle/zle_main.c also reads WWN_ZLE_INFD.
+	 */
 	if (SHTTY != -1 && SHTTY != 0)
 	    zclose(SHTTY);
 	SHTTY = movefd(dup(0));
@@ -63,9 +70,20 @@ def patch_ios_init_io(src: str) -> str:
 	    opts[USEZLE] = 1;
 	}
 	wwn_pty_ios_note_init_io();
-    }
+    } else
+	opts[USEZLE] = 0;
+#else
+    if (interact) {
+	init_shout();
+	if(!SHTTY || !shout)
+	    opts[USEZLE] = 0;
+    } else
+	opts[USEZLE] = 0;
 #endif
-}"""
+
+    /* If interactive, make sure the shell is in the foreground and is the
+     * process group leader.
+     */"""
     if anchor not in src:
         fail("init_io() tail anchor missing in init.c")
     return src.replace(anchor, patch, 1)
@@ -143,28 +161,28 @@ def patch_ios_init_done() -> None:
         src = src.replace(hook_anchor, hook, 1)
         changed = True
 
-    newuser_old = """\t    if (interact) {
-\t\t/*
-\t\t * Always attempt to load the newuser module to perform
-\t\t * checks for new zsh users.  Don't care if we can't load it.
-\t\t */
-\t\tif (!load_module("zsh/newuser", NULL, 1)) {
-\t\t    /* Unload it immediately. */
-\t\t    unload_named_module("zsh/newuser", "zsh", 1);
-\t\t}
-\t    }"""
-    newuser_new = """\t    if (interact) {
+    newuser_old = """	    if (interact) {
+		/*
+		 * Always attempt to load the newuser module to perform
+		 * checks for new zsh users.  Don't care if we can't load it.
+		 */
+		if (!load_module("zsh/newuser", NULL, 1)) {
+		    /* Unload it immediately. */
+		    unload_named_module("zsh/newuser", "zsh", 1);
+		}
+	    }"""
+    newuser_new = """	    if (interact) {
 #if !(defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH))
-\t\t/*
-\t\t * Always attempt to load the newuser module to perform
-\t\t * checks for new zsh users.  Don't care if we can't load it.
-\t\t */
-\t\tif (!load_module("zsh/newuser", NULL, 1)) {
-\t\t    /* Unload it immediately. */
-\t\t    unload_named_module("zsh/newuser", "zsh", 1);
-\t\t}
+		/*
+		 * Always attempt to load the newuser module to perform
+		 * checks for new zsh users.  Don't care if we can't load it.
+		 */
+		if (!load_module("zsh/newuser", NULL, 1)) {
+		    /* Unload it immediately. */
+		    unload_named_module("zsh/newuser", "zsh", 1);
+		}
 #endif
-\t    }"""
+	    }"""
     if "#if !(defined(__APPLE__)" in src and "zsh/newuser" in src:
         pass
     elif newuser_old in src:
