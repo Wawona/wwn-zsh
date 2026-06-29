@@ -25,11 +25,13 @@ pkgs.stdenv.mkDerivation {
   nativeBuildInputs = with buildPackages; [
     autoconf
     automake
-    yodl
+    # yodl is only used for Doc/ targets; `make -C Src zsh` does not need it.
+    # Keeping yodl pulls an icmake build that invokes bare `gcc` for symbol/sysp.c
+    # on macOS hosts (no gcc in PATH). Configure falls back to YODL=: when absent.
   ];
 
   preConfigure = ''
-    export CC="${androidToolchain.androidCC} --target=${androidToolchain.androidTarget}"
+    export CC="${androidToolchain.androidCC}"
     export AR="${androidToolchain.androidAR}"
     export STRIP="${androidToolchain.androidSTRIP}"
     export RANLIB="${androidToolchain.androidRANLIB}"
@@ -41,9 +43,19 @@ pkgs.stdenv.mkDerivation {
     cp ${./termcap-stub.c} termcap-stub.c
   '';
 
+  preBuild = ''
+    # Re-export for make -C Src (symtab/.syms rules); stdenv may reset CC after configure.
+    export CC="${androidToolchain.androidCC}"
+    export AR="${androidToolchain.androidAR}"
+    export STRIP="${androidToolchain.androidSTRIP}"
+    export RANLIB="${androidToolchain.androidRANLIB}"
+    export CFLAGS="--sysroot=${androidToolchain.androidNdkSysroot} -fPIE -O2"
+    export LDFLAGS="--target=${androidToolchain.androidTarget} --sysroot=${androidToolchain.androidNdkSysroot} -L${androidToolchain.androidNdkAbiLibDir} -fPIE -pie"
+  '';
+
   configurePhase = ''
     runHook preConfigure
-    "$CC" -c termcap-stub.c $CFLAGS -o termcap-stub.o
+    $CC -c termcap-stub.c $CFLAGS -o termcap-stub.o
     "$AR" rcs libtermcap.a termcap-stub.o
     cp libtermcap.a libcurses.a
     export LDFLAGS="-L$PWD $LDFLAGS"
