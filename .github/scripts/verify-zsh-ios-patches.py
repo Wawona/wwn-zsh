@@ -12,6 +12,7 @@ Static, source-only checks (no build required):
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -20,13 +21,17 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+TOOLCHAIN_ROOT = Path(
+    os.environ.get("WWN_TOOLCHAIN_ROOT", ROOT.parent / "wwn-toolchain")
+)
+WAWONA_ROOT = Path(os.environ.get("WAWONA_ROOT", ROOT.parent / "Wawona"))
 PATCH = ROOT / "dependencies/libs/zsh/patches/patch-zsh-exec.py"
 ZSH_IOS_NIX = ROOT / "dependencies/libs/zsh/ios.nix"
-DISPATCH_C = ROOT / "dependencies/libs/wawona-pty/src/wawona-dispatch.c"
-PTY_HEADER = ROOT / "dependencies/libs/wawona-pty/include/wwn_pty.h"
-PTY_IOS_NIX = ROOT / "dependencies/libs/wawona-pty/ios.nix"
-CARGO_TOML = ROOT / "Cargo.toml"
-LIB_RS = ROOT / "src/lib.rs"
+DISPATCH_C = TOOLCHAIN_ROOT / "dependencies/libs/wawona-pty/src/wawona-dispatch.c"
+PTY_HEADER = TOOLCHAIN_ROOT / "dependencies/libs/wawona-pty/include/wwn_pty.h"
+PTY_IOS_NIX = TOOLCHAIN_ROOT / "dependencies/libs/wawona-pty/ios.nix"
+CARGO_TOML = WAWONA_ROOT / "Cargo.toml"
+LIB_RS = WAWONA_ROOT / "src/lib.rs"
 ROOTFS_NIX = ROOT / "dependencies/wawona/ios-rootfs.nix"
 
 REQUIRED_PATCH_MARKERS = [

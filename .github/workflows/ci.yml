@@ -11,14 +11,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Wawona/wwn-toolchain
+          path: wwn-toolchain
+      - uses: actions/checkout@v4
+        with:
+          repository: Wawona/Wawona
+          path: Wawona
+          sparse-checkout: |
+            Cargo.toml
+            src/lib.rs
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: python3 .github/scripts/verify-zsh-ios-patches.py
+      - name: Verify patch anchors + cross-repo wiring
+        env:
+          WWN_TOOLCHAIN_ROOT: ${{ github.workspace }}/wwn-toolchain
+          WAWONA_ROOT: ${{ github.workspace }}/Wawona
+        run: python3 .github/scripts/verify-zsh-ios-patches.py
 
   eval:
     name: flake eval (instantiation)
     runs-on: macos-15
+    needs: patch-anchors
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
@@ -29,12 +46,30 @@ jobs:
           nix eval --raw .#packages.aarch64-darwin.zsh-ios.drvPath
           nix eval --raw .#packages.aarch64-darwin.zsh-framework-ios.drvPath
           nix eval --raw .#packages.aarch64-darwin.wawona-rootfs-ios.drvPath
+          nix eval --raw .#packages.aarch64-darwin.zsh-android.drvPath
 
-  build:
-    name: build zsh
+  build-ios:
+    name: build zsh (Apple mobile)
     runs-on: macos-15
     needs: eval
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
-      - run: nix build .#packages.aarch64-darwin.zsh-ios -L
+        with:
+          extra-conf: |
+            sandbox = relaxed
+            allow-import-from-derivation = true
+      - run: nix build .#packages.aarch64-darwin.zsh-ios .#packages.aarch64-darwin.wawona-rootfs-ios -L
+
+  build-android:
+    name: build zsh (Android)
+    runs-on: macos-15
+    needs: eval
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            sandbox = relaxed
+            allow-import-from-derivation = true
+      - run: nix build .#packages.aarch64-darwin.zsh-android -L
