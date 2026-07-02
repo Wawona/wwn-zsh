@@ -109,6 +109,40 @@ let
     }
   '';
 
+  # Default fastfetch config for the in-process iOS build. Seeded once into
+  # $HOME/.config/fastfetch/config.jsonc by WWNRootfsManager. Multithreading is
+  # off (per-run in-process lifecycle; re-enable after device stress testing)
+  # and only sandbox-safe modules are listed (no subprocess/IOKit detectors).
+  fastfetchConfigTemplate = pkgs.writeText "fastfetch-config.jsonc" ''
+    {
+      "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
+      "general": {
+        "multithreading": false
+      },
+      "display": {
+        "pipe": false,
+        "disableLinewrap": true
+      },
+      "modules": [
+        "title",
+        "separator",
+        "os",
+        "host",
+        "kernel",
+        "uptime",
+        "cpu",
+        "gpu",
+        "memory",
+        "swap",
+        "shell",
+        "terminal",
+        "localip",
+        "break",
+        "colors"
+      ]
+    }
+  '';
+
   zloginTemplate = pkgs.writeText "zlogin.template" ''
     # Wawona iOS .zlogin — runs once for login shells. Safe to edit.
     print -P "%F{green}Wawona%f zsh ''${ZSH_VERSION} — in-process, App Store compliant."
@@ -123,10 +157,11 @@ pkgs.runCommand "wawona-rootfs-ios${if simulator then "-sim" else ""}"
   }
   ''
     set -euo pipefail
-    mkdir -p $out/rootfs/etc/zsh $out/rootfs/home $out/rootfs/usr/bin $out/rootfs/usr/share
+    mkdir -p $out/rootfs/etc/zsh $out/rootfs/etc/fastfetch $out/rootfs/home $out/rootfs/usr/bin $out/rootfs/usr/share
     cp ${zshenvTemplate} $out/rootfs/etc/zsh/zshenv.template
     cp ${zshrcTemplate} $out/rootfs/etc/zsh/zshrc.template
     cp ${zloginTemplate} $out/rootfs/etc/zsh/zlogin.template
+    cp ${fastfetchConfigTemplate} $out/rootfs/etc/fastfetch/config.jsonc.template
     cat > $out/rootfs/usr/bin/zsh <<'EOF'
 # Wawona iOS: zsh is linked into the app binary (libwawona-zsh.a).
 # This path exists only for shell conventions; exec is in-process via wawona-pty.
@@ -139,5 +174,5 @@ Bundled Wawona userland templates — do not modify files inside the app bundle.
 zsh is linked into the app binary; this tree holds templates, share files, and
 writable HOME data under Application Support after first launch.
 EOF
-    echo "17" > $out/rootfs/etc/zsh/.template-version
+    echo "18" > $out/rootfs/etc/zsh/.template-version
   ''
