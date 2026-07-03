@@ -109,40 +109,6 @@ let
     }
   '';
 
-  # Default fastfetch config for the in-process iOS build. Seeded once into
-  # $HOME/.config/fastfetch/config.jsonc by WWNRootfsManager. Multithreading is
-  # off (per-run in-process lifecycle; re-enable after device stress testing)
-  # and only sandbox-safe modules are listed (no subprocess/IOKit detectors).
-  fastfetchConfigTemplate = pkgs.writeText "fastfetch-config.jsonc" ''
-    {
-      "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
-      "general": {
-        "multithreading": false
-      },
-      "display": {
-        "pipe": false,
-        "disableLinewrap": true
-      },
-      "modules": [
-        "title",
-        "separator",
-        "os",
-        "host",
-        "kernel",
-        "uptime",
-        "cpu",
-        "gpu",
-        "memory",
-        "swap",
-        "shell",
-        "terminal",
-        "localip",
-        "break",
-        "colors"
-      ]
-    }
-  '';
-
   zloginTemplate = pkgs.writeText "zlogin.template" ''
     # Wawona iOS .zlogin — runs once for login shells. Safe to edit.
     print -P "%F{green}Wawona%f zsh ''${ZSH_VERSION} — in-process, App Store compliant."
@@ -161,7 +127,11 @@ pkgs.runCommand "wawona-rootfs-ios${if simulator then "-sim" else ""}"
     cp ${zshenvTemplate} $out/rootfs/etc/zsh/zshenv.template
     cp ${zshrcTemplate} $out/rootfs/etc/zsh/zshrc.template
     cp ${zloginTemplate} $out/rootfs/etc/zsh/zlogin.template
-    cp ${fastfetchConfigTemplate} $out/rootfs/etc/fastfetch/config.jsonc.template
+    # v2: do not ship config.jsonc.template — plain fastfetch must match
+    # `fastfetch --config none` (upstream default modules + Apple-mobile TTY
+    # display patch). A seeded JSON config forces ffPrintJsonConfig, which
+    # crashes on device; defaults via the command-option path are stable.
+    echo "2" > $out/rootfs/etc/fastfetch/.template-version
     cat > $out/rootfs/usr/bin/zsh <<'EOF'
 # Wawona iOS: zsh is linked into the app binary (libwawona-zsh.a).
 # This path exists only for shell conventions; exec is in-process via wawona-pty.
