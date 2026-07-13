@@ -238,24 +238,21 @@ def main():
 #if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH)
 /* In-process external-command dispatch (no fork/exec). See wwn_pty.h.
  *
- * The real implementations live in libwwn-pty.a, which is only linked at final
- * app-link time — NOT during the zsh derivation, where `make -C Src zsh` links a
- * throwaway standalone `zsh` binary (built solely to emit stamp-modobjs/module
- * objects). To let that standalone link succeed we provide WEAK fallback
- * definitions here; at app link the strong definitions in libwwn-pty.a (pulled
- * via -force_load) override these weak stubs. The standalone binary is never run
- * in-process, so its stubs being no-ops is harmless. */
+ * Implementations live in libwwn-pty.a (force_load'd at app link).  Do NOT
+ * define weak fallbacks here: xcode-prebuild privatises libwawona-zsh.a via
+ * ld -r + nmedit, which would turn weak stubs into local symbols and trap all
+ * in-process exec inside the zsh archive (dispatch always NOT_HANDLED).
+ * The throwaway `make -C Src zsh` link during the Nix build links libwwn-pty.a
+ * so this translation unit only needs extern declarations. */
 #define WWN_INPROC_DISPATCH 1
 #define WWN_DISPATCH_NOT_HANDLED (-1)
 extern char **environ;
-__attribute__((weak)) int wawona_dispatch_can_handle(const char *argv0)
-{ (void) argv0; return 0; }
-__attribute__((weak)) int wawona_dispatch_inprocess(const char *path,
-                                                    char *const argv[],
-                                                    char *const envp[])
-{ (void) path; (void) argv; (void) envp; return WWN_DISPATCH_NOT_HANDLED; }
-__attribute__((weak)) void wwn_pty_ios_shell_init_done(void) {}
-__attribute__((weak)) void wwn_pty_ios_note_init_io(void) {}
+extern int wawona_dispatch_can_handle(const char *argv0);
+extern int wawona_dispatch_inprocess(const char *path,
+                                    char *const argv[],
+                                    char *const envp[]);
+extern void wwn_pty_ios_shell_init_done(void);
+extern void wwn_pty_ios_note_init_io(void);
 #endif
 """
         src = src.replace(anchor_inc, ffi, 1)

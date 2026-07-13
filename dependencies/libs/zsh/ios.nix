@@ -80,7 +80,15 @@ pkgs.stdenv.mkDerivation {
     # (resolved at final app link from libwwn-pty.a) instead of fork/exec.
     # Runs after ./configure (exec.c is static source) and before make.
     python3 ${./patches/patch-zsh-exec.py}
-    make -C Src -j''${NIX_BUILD_CORES:-4} zsh
+    # Permanent link-collision renames (xkbcommon/neovim/openssh symbol overlap).
+    python3 ${./patches/patch-zsh-link-collisions.py}
+    cat >> config.h <<'EOF'
+#define parse_string wwn_zsh_parse_string
+#define source wwn_zsh_source
+#define pattern_match wwn_zsh_pattern_match
+EOF
+    $CC -c ${./wawona-dispatch-link-stubs.c} $CFLAGS -o "$PWD/wawona-dispatch-link-stubs.o"
+    make -C Src -j''${NIX_BUILD_CORES:-4} LIBS="$LIBS $PWD/wawona-dispatch-link-stubs.o -L$PWD -lcurses -liconv" zsh
     cd Src
     AR="$DEVELOPER_DIR/Toolchains/XcodeDefault.xctoolchain/usr/bin/ar"
     echo '#define main wawona_zsh_main' > ../main_rename.h
