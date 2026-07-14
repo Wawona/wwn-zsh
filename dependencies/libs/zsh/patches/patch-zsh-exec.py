@@ -253,6 +253,18 @@ extern int wawona_dispatch_inprocess(const char *path,
                                     char *const envp[]);
 extern void wwn_pty_ios_shell_init_done(void);
 extern void wwn_pty_ios_note_init_io(void);
+/*
+ * tvOS/watchOS SDKs mark fork/execve unavailable (hard error even in
+ * unreachable branches). iPhoneOS still compiles those symbols. Stub them
+ * out so shared ios.nix recipes can build under buildForTVOS/WatchOS.
+ */
+#if TARGET_OS_TV || TARGET_OS_WATCH
+#include <errno.h>
+#undef fork
+#undef execve
+#define fork() (errno = ENOSYS, (pid_t)-1)
+#define execve(path, argv, envp) (errno = ENOSYS, -1)
+#endif
 #endif
 """
         src = src.replace(anchor_inc, ffi, 1)

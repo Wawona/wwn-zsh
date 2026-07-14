@@ -224,11 +224,19 @@ def main() -> None:
     if "patch-zsh-exec.py" not in ios_nix:
         print("FAIL zsh/ios.nix does not invoke patch-zsh-exec.py", file=sys.stderr)
         sys.exit(1)
-    # The patch must run before the Src build.
+    if "patch-zsh-link-collisions.py" not in ios_nix:
+        print("FAIL zsh/ios.nix does not invoke patch-zsh-link-collisions.py",
+              file=sys.stderr)
+        sys.exit(1)
+    # The patches must run before the Src build.
     if ios_nix.index("patch-zsh-exec.py") > ios_nix.index("make -C Src"):
         print("FAIL patch-zsh-exec.py must run before `make -C Src`", file=sys.stderr)
         sys.exit(1)
-    print("OK zsh/ios.nix invokes the exec patch before build")
+    if ios_nix.index("patch-zsh-link-collisions.py") > ios_nix.index("make -C Src"):
+        print("FAIL patch-zsh-link-collisions.py must run before `make -C Src`",
+              file=sys.stderr)
+        sys.exit(1)
+    print("OK zsh/ios.nix invokes exec + link-collision patches before build")
 
     pty_nix = read(PTY_IOS_NIX)
     if "wawona-dispatch.c" not in pty_nix:
