@@ -59,6 +59,10 @@ REQUIRED_DISPATCH_MARKERS = [
     "WWN_DISPATCH_NOT_HANDLED",
     "wwn_safe_subset",
     "wawona_dispatch_can_handle",
+    "ssh_main",
+    "ssh_keygen_main",
+    "scp_main",
+    "libwwn-ssh-cli",
 ]
 
 REQUIRED_HEADER_MARKERS = [

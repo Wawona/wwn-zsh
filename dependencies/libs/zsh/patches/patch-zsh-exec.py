@@ -45,7 +45,7 @@ def patch_ios_init_io(src: str) -> str:
      */"""
     patch = """    /* We will only use zle if shell is interactive, *
      * SHTTY != -1, and shout != 0                   */
-#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH)
+#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH || TARGET_OS_VISION)
     if (interact) {
 	/*
 	 * wawona-pty: stdout is the weston display socket; keyboard bytes are
@@ -95,7 +95,7 @@ def patch_ios_init_prologue(src: str) -> str:
     anchor = '#include "zsh.mdh"\n\n'
     if anchor not in src:
         fail("init.c include anchor missing")
-    prologue = anchor + """#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH)
+    prologue = anchor + """#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH || TARGET_OS_VISION)
 extern void wwn_pty_ios_note_init_io(void);
 extern void wwn_pty_ios_shell_init_done(void);
 #endif
@@ -110,7 +110,7 @@ def patch_ios_zle_input(src: str, path_name: str) -> str:
     anchor = '#include "zle.mdh"\n'
     if anchor not in src:
         fail(f"{path_name} zle.mdh anchor missing")
-    hdr = anchor + """#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH)
+    hdr = anchor + """#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH || TARGET_OS_VISION)
 #define WWN_ZLE_INFD 0
 #else
 #define WWN_ZLE_INFD SHTTY
@@ -154,7 +154,7 @@ def patch_ios_init_done() -> None:
         if hook_anchor not in src:
             fail("run_init_scripts hook anchor missing in init.c")
         hook = """    run_init_scripts();
-#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH)
+#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH || TARGET_OS_VISION)
     wwn_pty_ios_shell_init_done();
 #endif
     setupshin(runscript);"""
@@ -172,7 +172,7 @@ def patch_ios_init_done() -> None:
 		}
 	    }"""
     newuser_new = """	    if (interact) {
-#if !(defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH))
+#if !(defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH || TARGET_OS_VISION))
 		/*
 		 * Always attempt to load the newuser module to perform
 		 * checks for new zsh users.  Don't care if we can't load it.
@@ -235,7 +235,7 @@ def main():
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
 #endif
-#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH)
+#if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH || TARGET_OS_VISION)
 /* In-process external-command dispatch (no fork/exec). See wwn_pty.h.
  *
  * Implementations live in libwwn-pty.a (force_load'd at app link).  Do NOT
