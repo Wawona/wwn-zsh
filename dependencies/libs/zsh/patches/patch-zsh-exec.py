@@ -203,17 +203,20 @@ def patch_ios_init_done() -> None:
 def patch_ios_compinit_guard(src: str) -> str:
     if "WAWONA_ENABLE_COMPINIT" in src:
         return src
+    # Anchor only on the (stable) function signature + opening brace, NOT the
+    # first local declaration: zsh 5.9.1 used `buf[PATH_MAX+1]` while 5.9.2 uses
+    # `buf[PATH_MAX]`, and keying on that line makes the patch brittle across
+    # point releases. The guard is inserted right after `{`, before the first
+    # declaration — legal under -std=gnu23 (mixed decls/statements), which is how
+    # this build compiles zsh.
     anchor = """getfpfunc(char *s, int *ksh, char **fdir, char **alt_path, int test_only)
-{
-    char **pp, buf[PATH_MAX+1];"""
-    guard = """getfpfunc(char *s, int *ksh, char **fdir, char **alt_path, int test_only)
-{
+{"""
+    guard = anchor + """
 #ifdef WWN_INPROC_DISPATCH
     /* Parsing Completion/compinit faults on in-process iOS; require opt-in. */
     if (s && strcmp(s, "compinit") == 0 && getenv("WAWONA_ENABLE_COMPINIT") == NULL)
 	return test_only ? NULL : &dummy_eprog;
-#endif
-    char **pp, buf[PATH_MAX+1];"""
+#endif"""
     if anchor not in src:
         fail("getfpfunc anchor missing in exec.c")
     return src.replace(anchor, guard, 1)
