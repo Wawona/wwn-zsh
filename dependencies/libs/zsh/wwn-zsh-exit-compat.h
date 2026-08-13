@@ -12,7 +12,13 @@
 
 #if defined(__APPLE__) && (TARGET_OS_IPHONE || TARGET_OS_TV || TARGET_OS_WATCH)
 
+/*
+ * Parse real libc prototypes BEFORE installing exit macros. Force-include
+ * runs ahead of every .c unit; defining exit/_exit first mangles unistd.h
+ * mid-parse (declarations of chdir/access/getpid never appear).
+ */
 #include <stdlib.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
