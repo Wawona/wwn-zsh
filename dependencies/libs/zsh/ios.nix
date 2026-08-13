@@ -34,9 +34,9 @@ pkgs.stdenv.mkDerivation {
     cp ${./termcap-stub.h} termcap-stub.h
     export CC="$CC"
     export CXX="$CXX"
-    # Soft-exit: zsh exit()/_exit must not terminate the Wawona host process.
-    cp ${./wwn-zsh-exit-compat.h} wwn-zsh-exit-compat.h
-    export CFLAGS="-arch arm64 -isysroot $SDKROOT ${mobile.minVerFlag} -fPIC -O2 -include $PWD/wwn-zsh-exit-compat.h"
+    # Soft-exit is applied in buildPhase (patch-zsh-soft-exit.py) — do not
+    # force-include #define exit/_exit (breaks zsh _((…)) .epro prototypes).
+    export CFLAGS="-arch arm64 -isysroot $SDKROOT ${mobile.minVerFlag} -fPIC -O2"
     export LDFLAGS="-arch arm64 -isysroot $SDKROOT ${mobile.minVerFlag}"
   '';
 
@@ -82,6 +82,8 @@ pkgs.stdenv.mkDerivation {
     # (resolved at final app link from libwwn-pty.a) instead of fork/exec.
     # Runs after ./configure (exec.c is static source) and before make.
     python3 ${./patches/patch-zsh-exec.py}
+    # In-process shell: zexit must soft-exit (longjmp in libwwn-pty), not libc exit.
+    python3 ${./patches/patch-zsh-soft-exit.py}
     # Permanent link-collision renames (xkbcommon/neovim/openssh symbol overlap).
     python3 ${./patches/patch-zsh-link-collisions.py}
     cat >> config.h <<'EOF'
