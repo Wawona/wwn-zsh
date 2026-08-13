@@ -27,4 +27,12 @@ int wawona_dispatch_inprocess(const char *path, char *const argv[], char *const 
 void wwn_pty_ios_shell_init_done(void) {}
 void wwn_pty_ios_note_init_io(void) {}
 
+/* Soft-exit is provided by libwwn-pty.a at final app link; stub for make zsh. */
+void wwn_zsh_soft_exit(int status)
+{
+	(void)status;
+	for (;;)
+		;
+}
+
 #endif

@@ -34,7 +34,9 @@ pkgs.stdenv.mkDerivation {
     cp ${./termcap-stub.h} termcap-stub.h
     export CC="$CC"
     export CXX="$CXX"
-    export CFLAGS="-arch arm64 -isysroot $SDKROOT ${mobile.minVerFlag} -fPIC -O2"
+    # Soft-exit: zsh exit()/_exit must not terminate the Wawona host process.
+    cp ${./wwn-zsh-exit-compat.h} wwn-zsh-exit-compat.h
+    export CFLAGS="-arch arm64 -isysroot $SDKROOT ${mobile.minVerFlag} -fPIC -O2 -include $PWD/wwn-zsh-exit-compat.h"
     export LDFLAGS="-arch arm64 -isysroot $SDKROOT ${mobile.minVerFlag}"
   '';
 
