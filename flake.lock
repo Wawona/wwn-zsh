@@ -133,17 +133,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1782586062,
-        "narHash": "sha256-uXy50N5eZgNmP3UXunWUoQ0vtZcMSAz0qhWzn+eL/Ho=",
-        "owner": "Wawona",
-        "repo": "wwn-toolchain",
-        "rev": "b0bc8140135d7ac08327c8ccc297b42eaf10bd89",
-        "type": "github"
+        "lastModified": 1786606037,
+        "narHash": "sha256-EQZCMXhCt2JMOdC+j11Nu5WFttyKUL/PkBB567+Ulbs=",
+        "rev": "46fe3ddd36717ca131651b9312b60dc4cab059a3",
+        "revCount": 49,
+        "type": "tarball",
+        "url": "https://api.flakehub.com/f/pinned/Wawona/wwn-toolchain/0.1.49%2Brev-46fe3ddd36717ca131651b9312b60dc4cab059a3/019ffa05-8a02-76f0-8c04-0916c14f665a/source.tar.gz"
       },
       "original": {
-        "owner": "Wawona",
-        "repo": "wwn-toolchain",
-        "type": "github"
+        "type": "tarball",
+        "url": "https://flakehub.com/f/Wawona/wwn-toolchain/%2A"
       }
     }
   },
