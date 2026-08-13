@@ -17,7 +17,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void wwn_zsh_soft_exit(int status) __attribute__((noreturn));
+void wwn_zsh_soft_exit(int status) __attribute__((__noreturn__));
 #ifdef __cplusplus
 }
 #endif
