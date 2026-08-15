@@ -63,6 +63,10 @@ REQUIRED_DISPATCH_MARKERS = [
     "ssh_keygen_main",
     "scp_main",
     "libwwn-ssh-cli",
+    "weston_terminal_main",
+    "wwn_run_help",
+    "wawona_wasm_run",
+    "wawona_wasm_can_run",
 ]
 
 REQUIRED_HEADER_MARKERS = [
@@ -260,6 +264,29 @@ def main() -> None:
 
     check_safe_subset_consistency()
     check_no_reachable_spawn()
+
+    rootfs = read(ROOTFS_NIX)
+    for marker in (
+        "help wawona wasm",
+        "help() { command help",
+        'echo "20"',
+        "Wawona in-process:",
+        "$WAWONA_ROOTFS/usr/bin",
+    ):
+        if marker not in rootfs:
+            print(f"FAIL ios-rootfs.nix missing {marker!r}", file=sys.stderr)
+            sys.exit(1)
+    print("OK ios-rootfs.nix help/bin-stub/PATH catalog (template v20)")
+
+    wawona_rootfs = WAWONA_ROOT / "dependencies/wawona/ios-rootfs.nix"
+    if wawona_rootfs.is_file():
+        wr = read(wawona_rootfs)
+        for marker in ("help wawona wasm", "help() { command help", 'echo "20"'):
+            if marker not in wr:
+                print(f"FAIL Wawona ios-rootfs.nix missing {marker!r}",
+                      file=sys.stderr)
+                sys.exit(1)
+        print("OK Wawona ios-rootfs.nix catalog in sync")
     try_apply_against_pinned_zsh()
     print("verify-zsh-ios-patches: all static checks passed")
 

@@ -381,7 +381,7 @@ extern void wwn_pty_ios_note_init_io(void);
             "		    if (wwn_rc == WWN_DISPATCH_NOT_HANDLED) {\n"
             "			char *wwn_cmd = wwn_argv ? wwn_argv[0] : NULL;\n"
             "			if (wwn_cmd)\n"
-            "			    fprintf(stdout, \"wawona: command not found: %s (no builtin or bundled in-process tool; external binaries can't run in the iOS sandbox).\\n\", wwn_cmd);\n"
+            "			    fprintf(stdout, \"wawona: command not found: %s (type help for the bundled catalog; external binaries can't run in the iOS sandbox).\\n\", wwn_cmd);\n"
             "			else\n"
             "			    fprintf(stdout, \"wawona: command not found.\\n\");\n"
             "			lastval = 127;\n"
