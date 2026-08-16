@@ -1,5 +1,7 @@
 # wwn-zsh
 
+[![CI](https://github.com/Wawona/wwn-zsh/actions/workflows/ci.yml/badge.svg)](https://github.com/Wawona/wwn-zsh/actions/workflows/ci.yml)
+
 Wawona's bundled `zsh` fork, cross-compiled for the full Apple ecosystem
 (iOS/iPadOS/tvOS/watchOS/visionOS) and Android, plus the Wawona iOS **RootFS**.
 
