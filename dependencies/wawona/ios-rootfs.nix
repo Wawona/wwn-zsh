@@ -18,6 +18,12 @@ let
     # Wawona iOS .zshenv — sourced for every shell. Safe to edit.
     : ''${WAWONA_BUNDLE_ROOTFS:=''${WAWONA_ROOTFS:-''${HOME:h}}}
     : ''${WAWONA_ROOTFS:=$WAWONA_BUNDLE_ROOTFS}
+    # Darwin sandbox: getcwd() reports /private/var/... while Cocoa often sets
+    # HOME to /var/... . Physicalize so prompt %~ becomes "~" in home.
+    if [[ -d ''${HOME:-} ]]; then
+      HOME=''${HOME:A}
+      export HOME
+    fi
     path=(
       $WAWONA_ROOTFS/usr/bin
       $WAWONA_ROOTFS/bin
@@ -45,6 +51,9 @@ let
   # longer contains a read/eval loop. Fully user-editable in writable HOME.
   zshrcTemplate = pkgs.writeText "zshrc.template" ''
     # Wawona iOS .zshrc — interactive shell configuration. Safe to edit.
+
+    # Start in shell HOME so the first prompt is "~" (not the sandbox abspath).
+    [[ -d $HOME ]] && cd -- "$HOME" 2>/dev/null
 
     export HISTFILE="$HOME/.zsh_history"
     export HISTSIZE=2000
@@ -189,5 +198,5 @@ Bundled Wawona userland templates — do not modify files inside the app bundle.
 zsh is linked into the app binary; this tree holds templates, share files, and
 writable HOME data under Application Support after first launch.
 EOF
-    echo "20" > $out/rootfs/etc/zsh/.template-version
+    echo "21" > $out/rootfs/etc/zsh/.template-version
   ''
