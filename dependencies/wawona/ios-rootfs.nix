@@ -112,7 +112,7 @@ let
       help wawona wasm
       fastfetch phoon nvim vi vim waypipe waypipe-rs ssh ssh-keygen scp
       fuzzel foot weston-terminal
-      weston-simple-shm weston-flower weston-clickdot weston-smoke
+      weston-simple-shm weston-simple-egl weston-flower weston-clickdot weston-smoke
       weston-eventdemo weston-resizor weston-cliptest weston-transformed
       weston-stacking weston-dnd weston-image weston-scaler
       weston-editor weston-constraints
@@ -178,7 +178,7 @@ EOF
       nl tac fold expand unexpand truncate \
       fastfetch phoon nvim vi vim waypipe waypipe-rs ssh ssh-keygen scp \
       fuzzel foot weston-terminal \
-      weston-simple-shm weston-flower weston-clickdot weston-smoke \
+      weston-simple-shm weston-simple-egl weston-flower weston-clickdot weston-smoke \
       weston-eventdemo weston-resizor weston-cliptest weston-transformed \
       weston-stacking weston-dnd weston-image weston-scaler \
       weston-editor weston-constraints
@@ -198,5 +198,5 @@ Bundled Wawona userland templates — do not modify files inside the app bundle.
 zsh is linked into the app binary; this tree holds templates, share files, and
 writable HOME data under Application Support after first launch.
 EOF
-    echo "21" > $out/rootfs/etc/zsh/.template-version
+    echo "22" > $out/rootfs/etc/zsh/.template-version
   ''
