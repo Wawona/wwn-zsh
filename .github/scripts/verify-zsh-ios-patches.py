@@ -49,6 +49,17 @@ REQUIRED_PATCH_MARKERS = [
     "} else if (wwn_inproc) {",
     "makecline(args)",
     "unmetafy(*wwn_pp, NULL)",
+    "wwn_try_run_shell_script",
+    "wwn_is_interpreter_placeholder",
+    "wwn_inproc_shell_path_ok",
+    "wwn_inproc_runnable_path",
+    ".wasm",
+    "iscom_old",
+    "access(us, X_OK) == 0 && stat(us, &statbuf)",
+    "wwn_file_magic_is_native",
+    "wwn_run_script_file",
+    "sh -c",
+    "Mach-O",
     "fixfds(save)",
     "goto done;",
 ]
@@ -62,11 +73,14 @@ REQUIRED_DISPATCH_MARKERS = [
     "ssh_main",
     "ssh_keygen_main",
     "scp_main",
-    "libwwn-ssh-cli",
+    "libssh-inprocess",
     "weston_terminal_main",
     "wwn_run_help",
     "wawona_wasm_run",
     "wawona_wasm_can_run",
+    "chmod",
+    "Shell scripts",
+    "wwn_is_shell_interpreter_name",
 ]
 
 REQUIRED_HEADER_MARKERS = [
@@ -269,19 +283,30 @@ def main() -> None:
     for marker in (
         "help wawona wasm",
         "help() { command help",
-        'echo "20"',
+        'echo "25"',
         "Wawona in-process:",
         "$WAWONA_ROOTFS/usr/bin",
+        "sh zsh bash dash",
+        "chmod 755",
+        "Not a Mach-O. Do not source this file.",
+        "\n      .\n",
     ):
         if marker not in rootfs:
             print(f"FAIL ios-rootfs.nix missing {marker!r}", file=sys.stderr)
             sys.exit(1)
-    print("OK ios-rootfs.nix help/bin-stub/PATH catalog (template v20)")
+    print("OK ios-rootfs.nix help/bin-stub/PATH catalog (template v25)")
 
     wawona_rootfs = WAWONA_ROOT / "dependencies/wawona/ios-rootfs.nix"
     if wawona_rootfs.is_file():
         wr = read(wawona_rootfs)
-        for marker in ("help wawona wasm", "help() { command help", 'echo "20"'):
+        for marker in (
+            "help wawona wasm",
+            "help() { command help",
+            'echo "25"',
+            "sh zsh bash dash",
+            "chmod 755",
+            "Not a Mach-O. Do not source this file.",
+        ):
             if marker not in wr:
                 print(f"FAIL Wawona ios-rootfs.nix missing {marker!r}",
                       file=sys.stderr)

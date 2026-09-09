@@ -15,7 +15,7 @@ let
   # so re-point fpath at the bundled function tree. Modules are statically
   # linked (configure --disable-dynamic), so module_path is unused.
   zshenvTemplate = pkgs.writeText "zshenv.template" ''
-    # Wawona iOS .zshenv — sourced for every shell. Safe to edit.
+    # Wawona iOS .zshenv. Sourced for every shell. Safe to edit.
     : ''${WAWONA_BUNDLE_ROOTFS:=''${WAWONA_ROOTFS:-''${HOME:h}}}
     : ''${WAWONA_ROOTFS:=$WAWONA_BUNDLE_ROOTFS}
     # Darwin sandbox: getcwd() reports /private/var/... while Cocoa often sets
@@ -27,6 +27,7 @@ let
     path=(
       $WAWONA_ROOTFS/usr/bin
       $WAWONA_ROOTFS/bin
+      .
       $path
     )
     typeset -gU path
@@ -50,7 +51,7 @@ let
   # Interactive configuration. Real zsh + ZLE drive the line editor; this no
   # longer contains a read/eval loop. Fully user-editable in writable HOME.
   zshrcTemplate = pkgs.writeText "zshrc.template" ''
-    # Wawona iOS .zshrc — interactive shell configuration. Safe to edit.
+    # Wawona iOS .zshrc. Interactive shell configuration. Safe to edit.
 
     # Start in shell HOME so the first prompt is "~" (not the sandbox abspath).
     [[ -d $HOME ]] && cd -- "$HOME" 2>/dev/null
@@ -104,12 +105,12 @@ let
     WAWONA_INPROC_TOOLS=(
       ls cat cp mv rm mkdir rmdir ln touch echo pwd head tail wc sort cut tr
       seq basename dirname stat du df date env printenv uname whoami yes tee
-      nl tac fold expand unexpand truncate
+      nl tac fold expand unexpand truncate chmod
     )
 
     typeset -gaU WAWONA_INPROC_CLIENTS
     WAWONA_INPROC_CLIENTS=(
-      help wawona wasm
+      help wawona wasm sh zsh bash dash
       fastfetch phoon nvim vi vim waypipe waypipe-rs ssh ssh-keygen scp
       fuzzel foot weston-terminal weston niri
       weston-simple-shm weston-simple-egl weston-flower weston-clickdot weston-smoke
@@ -118,10 +119,11 @@ let
       weston-editor weston-constraints
     )
 
-    # iOS sandbox: there is no fork/exec. zsh builtins and the bundled
-    # in-process tools above run directly; everything else cannot launch.
+    # iOS sandbox: there is no fork/exec of Mach-O. zsh builtins, bundled
+    # in-process tools, and user shell scripts (sourced by bundled zsh) run
+    # directly. Native binaries cannot launch.
     # This handler is the clean fallback for commands the in-process dispatcher
-    # did not handle.
+    # and script interpreter did not handle.
     command_not_found_handler() {
       local cmd="$1"
       if (( ''${WAWONA_INPROC_TOOLS[(Ie)$cmd]} )); then
@@ -129,16 +131,16 @@ let
       elif (( ''${WAWONA_INPROC_CLIENTS[(Ie)$cmd]} )); then
         print -- "wawona: '$cmd' is bundled but unavailable in this build."
       else
-        print -- "wawona: command not found: $cmd (type help for the bundled catalog; external binaries can't run in the iOS sandbox)."
+        print -- "wawona: command not found: $cmd (type help for the catalog. Shell scripts: ./file.sh or sh file.sh. Native binaries cannot run in the iOS sandbox)."
       fi
       return 127
     }
   '';
 
   zloginTemplate = pkgs.writeText "zlogin.template" ''
-    # Wawona iOS .zlogin — runs once for login shells. Safe to edit.
-    print -P "%F{green}Wawona%f zsh ''${ZSH_VERSION} — in-process, App Store compliant."
-    print -P "%F{blue}Bundled:%f type %F{cyan}help%f — uutils, clients, WASM. ls /usr/bin lists names (in-process, no fork/exec)."
+    # Wawona iOS .zlogin. Runs once for login shells. Safe to edit.
+    print -P "%F{green}Wawona%f zsh ''${ZSH_VERSION}. In-process, App Store compliant."
+    print -P "%F{blue}Bundled:%f type %F{cyan}help%f. Uutils, clients, WASM. ls /usr/bin lists names (in-process, no fork/exec)."
     # Machines client id "phoon" (and allowlisted TTY tools) set WAWONA_AUTO_CMD
     # before launching weston-terminal. Run once, then drop the env so a later
     # plain terminal Start does not replay it.
@@ -162,17 +164,24 @@ pkgs.runCommand "wawona-rootfs-ios${if simulator then "-sim" else ""}"
     cp ${zshenvTemplate} $out/rootfs/etc/zsh/zshenv.template
     cp ${zshrcTemplate} $out/rootfs/etc/zsh/zshrc.template
     cp ${zloginTemplate} $out/rootfs/etc/zsh/zlogin.template
-    # v2: do not ship config.jsonc.template — plain fastfetch must match
+    # v2: do not ship config.jsonc.template. Plain fastfetch must match
     # `fastfetch --config none` (upstream default modules + Apple-mobile TTY
     # display patch). A seeded JSON config forces ffPrintJsonConfig, which
     # crashes on device; defaults via the command-option path are stable.
     echo "2" > $out/rootfs/etc/fastfetch/.template-version
-    cat > $out/rootfs/usr/bin/zsh <<'EOF'
-# Wawona iOS: zsh is linked into the app binary (libwawona-zsh.a).
+    # Interpreter placeholders: command -v zsh/sh resolve here. Comment files
+    # only (no Mach-O). Mode 755 so hashcmd does not hide them. Never sourced.
+    for name in sh zsh bash dash; do
+      cat > "$out/rootfs/usr/bin/$name" <<EOF
+# Wawona iOS: $name is the in-process interpreter (libwawona-zsh.a).
 # This path exists only for shell conventions; exec is in-process via wawona-pty.
+# Not a Mach-O. Do not source this file.
 EOF
+      chmod 755 "$out/rootfs/usr/bin/$name"
+      cp "$out/rootfs/usr/bin/$name" "$out/rootfs/bin/$name"
+    done
     for name in \
-      help wawona wasm clear \
+      help wawona wasm clear chmod \
       ls cat cp mv rm mkdir rmdir ln touch echo pwd head tail wc sort cut tr \
       seq basename dirname stat du df date env printenv uname whoami yes tee \
       nl tac fold expand unexpand truncate \
@@ -187,16 +196,16 @@ EOF
 # Wawona in-process: $name → wawona-dispatch (not a Mach-O).
 # Exec is intercepted by the zsh hook; this file exists so ls /usr/bin lists it.
 EOF
+      chmod 755 "$out/rootfs/usr/bin/$name"
       cp "$out/rootfs/usr/bin/$name" "$out/rootfs/bin/$name"
     done
-    cp $out/rootfs/usr/bin/zsh $out/rootfs/bin/zsh
     if [ -d "$zsh/share/zsh" ]; then
       cp -R "$zsh/share/zsh" $out/rootfs/usr/share/
     fi
     cat > $out/rootfs/README.txt <<'EOF'
-Bundled Wawona userland templates — do not modify files inside the app bundle.
+Bundled Wawona userland templates. Do not modify files inside the app bundle.
 zsh is linked into the app binary; this tree holds templates, share files, and
 writable HOME data under Application Support after first launch.
 EOF
-    echo "23" > $out/rootfs/etc/zsh/.template-version
+    echo "25" > $out/rootfs/etc/zsh/.template-version
   ''
