@@ -50,6 +50,7 @@ REQUIRED_PATCH_MARKERS = [
     "makecline(args)",
     "unmetafy(*wwn_pp, NULL)",
     "wwn_try_run_shell_script",
+    "if (lastval == 130)",
     "wwn_is_interpreter_placeholder",
     "wwn_inproc_shell_path_ok",
     "wwn_inproc_runnable_path",
@@ -81,6 +82,8 @@ REQUIRED_DISPATCH_MARKERS = [
     "chmod",
     "Shell scripts",
     "wwn_is_shell_interpreter_name",
+    "wwn_pty_ios_begin_inproc_cmd",
+    "wwn_finish_inproc_cmd",
 ]
 
 REQUIRED_HEADER_MARKERS = [
@@ -89,6 +92,8 @@ REQUIRED_HEADER_MARKERS = [
     "wwn_pty_ios_shell_init_done",
     "wwn_pty_ios_note_init_io",
     "WWN_DISPATCH_NOT_HANDLED",
+    "wwn_pty_ios_begin_inproc_cmd",
+    "wwn_pty_ios_end_inproc_cmd",
 ]
 
 
