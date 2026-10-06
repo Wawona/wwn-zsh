@@ -84,7 +84,7 @@ pkgs.stdenv.mkDerivation {
     python3 ${./patches/patch-zsh-exec.py}
     # In-process shell: zexit must soft-exit (longjmp in libwwn-pty), not libc exit.
     python3 ${./patches/patch-zsh-soft-exit.py}
-    # Permanent link-collision renames (xkbcommon/neovim/openssh symbol overlap).
+    # Permanent link-collision renames (xkbcommon/openssh symbol overlap).
     python3 ${./patches/patch-zsh-link-collisions.py}
     cat >> config.h <<'EOF'
 #define parse_string wwn_zsh_parse_string
